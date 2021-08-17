@@ -2,34 +2,45 @@
 
 const express = require('express');
 const authRouter = express.Router();
-
-const { users } = require('./models/index.js');
+const bcrypt = require('bcrypt');
+const users = require('./models/users');
+// const bearerdb = require('../auth/models/users')
 const basicAuth = require('./middleware/basic.js')
 const bearerAuth = require('./middleware/bearer.js')
-
+const {Sequelize, DataTypes} = require('sequelize');
+const POSTGRES_URI = 'postgres://localhost:5432/user';
+// config for prod
+const sequelize = new Sequelize(POSTGRES_URI, {});
+const UserSchema = users(sequelize, DataTypes);
 authRouter.post('/signup', async (req, res, next) => {
-  try {
-    let userRecord = await users.create(req.body);
-    const output = {
-      user: userRecord,
-      token: userRecord.token
-    };
-    res.status(200).json(output);
-  } catch (e) {
-    next(e.message);
-  }
+
+  console.log("inside signup !!! ");
+    console.log({body: req.body})
+    try {
+        const password = await bcrypt.hash(req.body.password, 10);
+        console.log("req.body.password :", password)
+        const record = await UserSchema.create(req.body );
+        console.log("record >>>>> ", record)
+        // console.log(await record.password);
+        res.json(record);
+    } catch (e) {
+        console.log(e);
+        next('invalid')
+        // res.status(500).json({err: 'invalid'})
+    }
 });
 
-authRouter.post('/signin', basicAuth, (req, res, next) => {
-  const user = {
-    user: request.user,
-    token: request.user.token
-  };
-  res.status(200).json(user);
+authRouter.post('/signin', basicAuth(UserSchema), (req, res, next) => {
+  res.status(200).json(req.user);
+  // const user = {
+  //   user: req.user,
+  //   token: req.user.token
+  // };
+  // res.status(200).json(user);
 });
 
 authRouter.get('/users', bearerAuth, async (req, res, next) => {
-  const users = await Users.findAll({});
+  const users = await UserSchema.findAll({});
   const list = users.map(user => user.username);
   res.status(200).json(list);
 });

@@ -1,15 +1,23 @@
 'use strict';
-
+const SECRET = process.env.SECRET || "samah:12345";
 const bcrypt = require('bcrypt');
-
+const jwt = require('jsonwebtoken');
 const userSchema = (sequelize, DataTypes) => {
-  const model = sequelize.define('User', {
-    username: { type: DataTypes.STRING, allowNull: false, unique: true },
-    password: { type: DataTypes.STRING, allowNull: false, },
+  const model = sequelize.define('testing', {
+    username: {
+       type: DataTypes.STRING, 
+       allowNull: false,
+        unique: true },
+    password: { 
+      type: DataTypes.STRING,
+       allowNull: false, },
     token: {
       type: DataTypes.VIRTUAL,
       get() {
-        return jwt.sign({ username: this.username });
+        return jwt.sign({ username: this.username },SECRET);
+      },
+      set(tokenObj) {
+         return jwt.sign(tokenObj, SECRET);
       }
     }
   });
@@ -21,11 +29,14 @@ const userSchema = (sequelize, DataTypes) => {
 
   // Basic AUTH: Validating strings (username, password) 
   model.authenticateBasic = async function (username, password) {
-    const user = await this.findOne({ username })
+    const user = await this.findOne({ where: {username: username}})
     const valid = await bcrypt.compare(password, user.password)
+    console.log('valid----->',valid);
     if (valid) { return user; }
     throw new Error('Invalid User');
+
   }
+  
 
   // Bearer AUTH: Validating a token
   model.authenticateToken = async function (token) {
@@ -43,3 +54,31 @@ const userSchema = (sequelize, DataTypes) => {
 }
 
 module.exports = userSchema;
+
+ 
+    
+//     Users.authenticateToken = async function(token) {
+//         try {
+//             console.log('samah token -------->',token);
+//             console.log('samah secret ------->',SECRET);
+//             console.log('jwt verify------>',jwt.verify(token, SECRET));
+//             const parsedToken = jwt.verify(token, SECRET); // {username: rawan ... }
+//             console.log('samah verify----->',parsedToken);
+//             const user = await this.findOne({ where: {username: parsedToken.username} });
+//             console.log('user token ------>',user);
+//             if(user) {
+//                 return user;
+//             }
+//             throw new Error('invalid token')
+//         } catch(e) {
+//             throw new Error(e.message);
+//         }
+        
+//     }
+
+//     return Users;
+// }
+
+
+
+// module.exports = UserSchema;

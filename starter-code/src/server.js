@@ -26,12 +26,15 @@ app.use(authRoutes);
 // Catchalls
 app.use(notFound);
 app.use(errorHandler);
-
+function start(port) {
+  app.listen(port, ()=> console.log(`Will run on port ${port}`))
+}
 module.exports = {
   server: app,
-  startup: (port) => {
-    app.listen(port, () => {
-      console.log(`Server Up on ${port}`);
-    });
-  },
+  start:start
+  // startup: (port) => {
+  //   app.listen(port, () => {
+  //     console.log(`Server Up on ${port}`);
+  //   });
+  // },
 };
